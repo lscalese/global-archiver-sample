@@ -1,0 +1,50 @@
+{
+    "Security.Services" : {
+        "%Service_Mirror" : {
+            "Enabled" : true
+        },
+        "%Service_WebGateway": {
+            "ClientSystems": "${WEBGATEWAY_IP};127.0.0.1;${REPORT_APP_NET_IP}"
+        }
+    },
+    "SYS.MirrorFailOver" : {
+        "Demo" : {
+            "Config": {
+                "Name" : "Demo",
+                "SystemName" : "report",
+                "InstanceName" : "IRIS",
+                "AgentAddress" : "${MASTER_APP_NET_IP}",
+                "AgentPort" : "2188",
+                "AsyncMember" : true,
+                "AsyncMemberType" : "rw"
+            },
+            "Databases" : [{
+                 "Directory" : "/usr/irissys/mgr/myappdata/"
+            }],
+            "LocalInfo" : {
+                "VirtualAddressInterface" : "eth0",
+                "MirrorAddress": "${REPORT_MIRROR_NET_IP}"
+            },
+            "SSLInfo" : {
+                "CAFile" : "/certificates/CA_Server.cer",
+                "CertificateFile" : "/certificates/report_server.cer",
+                "PrivateKeyFile" : "/certificates/report_server.key",
+                "PrivateKeyPassword" : "",
+                "PrivateKeyType" : "2"
+            }
+        }
+    },
+    "Security.SSLConfigs": {
+        "%SuperServer": {
+            "CAFile": "/certificates/CA_Server.cer",
+            "CertificateFile": "/certificates/report_server.cer",
+            "Name": "%SuperServer",
+            "PrivateKeyFile": "/certificates/report_server.key",
+            "Type": "1",
+            "VerifyPeer": 3
+        }
+    },
+    "Security.System": {
+        "SSLSuperServer":1
+    }
+}

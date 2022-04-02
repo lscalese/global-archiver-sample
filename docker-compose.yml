@@ -1,0 +1,163 @@
+# Variables are defined in .env file
+# to show the resolved docker-compose file, execute 
+# docker-compose config
+
+version: '3.7'
+
+services:
+  arbiter:
+    image: containers.intersystems.com/intersystems/arbiter:2021.1.0.215.0
+    init: true
+    container_name: mirror-demo-arbiter
+    command: 
+      - /usr/local/etc/irissys/startISCAgent.sh 2188
+    networks:
+      app_net:
+        ipv4_address: ${ARBITER_IP}
+    extra_hosts:
+      - "master:${MASTER_APP_NET_IP}"
+      - "backup:${BACKUP_APP_NET_IP}"
+      - "report:${REPORT_APP_NET_IP}"
+    cap_add:
+      - NET_ADMIN
+
+  master:
+    build: .
+    image: mirror-demo
+    container_name: mirror-demo-master
+    networks:
+      app_net:
+        ipv4_address: ${MASTER_APP_NET_IP}
+      mirror_net:
+        ipv4_address: ${MASTER_MIRROR_NET_IP}
+    environment: 
+      - IRIS_MIRROR_ROLE=master
+      - WEBGATEWAY_IP=${WEBGATEWAY_IP}
+      - MASTER_APP_NET_IP=${MASTER_APP_NET_IP}
+      - MASTER_MIRROR_NET_IP=${MASTER_MIRROR_NET_IP}
+      - ARBITER_IP=${ARBITER_IP}
+      - IRIS_VIRTUAL_IP=${IRIS_VIRTUAL_IP}
+    ports:
+      - 81:52773
+    volumes: 
+      - ./backup:/opt/backup
+      - ./init_mirror.sh:/init_mirror.sh
+      # Mount certificates
+      - ./certificates/master_server.cer:/certificates/master_server.cer
+      - ./certificates/master_server.key:/certificates/master_server.key
+      - ./certificates/CA_Server.cer:/certificates/CA_Server.cer
+      #- ~/iris.key:/usr/irissys/mgr/iris.key
+    hostname: master
+    extra_hosts:
+      - "backup:${BACKUP_APP_NET_IP}"
+      - "report:${REPORT_APP_NET_IP}"
+    cap_add:
+      - NET_ADMIN
+    command: ["-a", "/init_mirror.sh"]
+
+  backup:
+    image: mirror-demo
+    container_name: mirror-demo-backup
+    networks:
+      app_net:
+        ipv4_address: ${BACKUP_APP_NET_IP}
+      mirror_net:
+        ipv4_address: ${BACKUP_MIRROR_NET_IP}
+    ports:
+      - 82:52773
+    environment: 
+      - IRIS_MIRROR_ROLE=backup
+      - WEBGATEWAY_IP=${WEBGATEWAY_IP}
+      - BACKUP_MIRROR_NET_IP=${BACKUP_MIRROR_NET_IP}
+      - MASTER_APP_NET_IP=${MASTER_APP_NET_IP}
+      - BACKUP_APP_NET_IP=${BACKUP_APP_NET_IP}
+    volumes: 
+      - ./backup:/opt/backup
+      - ./init_mirror.sh:/init_mirror.sh
+      # Mount certificates
+      - ./certificates/backup_server.cer:/certificates/backup_server.cer
+      - ./certificates/backup_server.key:/certificates/backup_server.key
+      - ./certificates/CA_Server.cer:/certificates/CA_Server.cer
+      #- ~/iris.key:/usr/irissys/mgr/iris.key
+    hostname: backup
+    extra_hosts:
+      - "master:${MASTER_APP_NET_IP}"
+      - "report:${REPORT_APP_NET_IP}"
+    cap_add:
+      - NET_ADMIN
+    command: ["-a", "/init_mirror.sh"]
+
+  report:
+    image: mirror-demo
+    container_name: mirror-demo-report
+    networks:
+      app_net:
+        ipv4_address: ${REPORT_APP_NET_IP}
+      mirror_net:
+        ipv4_address: ${REPORT_MIRROR_NET_IP}
+    ports:
+      - 83:52773
+    environment: 
+      - IRIS_MIRROR_ROLE=report
+      - WEBGATEWAY_IP=${WEBGATEWAY_IP}
+      - MASTER_APP_NET_IP=${MASTER_APP_NET_IP}
+      - REPORT_MIRROR_NET_IP=${REPORT_MIRROR_NET_IP}
+      - REPORT_APP_NET_IP=${REPORT_APP_NET_IP}
+    volumes: 
+      - ./backup:/opt/backup
+      - ./init_mirror.sh:/init_mirror.sh
+      # Mount certificates
+      - ./certificates/report_server.cer:/certificates/report_server.cer
+      - ./certificates/report_server.key:/certificates/report_server.key
+      - ./certificates/CA_Server.cer:/certificates/CA_Server.cer
+      #- ~/iris.key:/usr/irissys/mgr/iris.key
+    hostname: report
+    extra_hosts:
+      - "master:${MASTER_APP_NET_IP}"
+      - "backup:${BACKUP_APP_NET_IP}"
+    cap_add:
+      - NET_ADMIN
+    command: ["-a", "/init_mirror.sh"]
+  
+  webgateway:
+    image: tls-ssl-webgateway
+    container_name: mirror-demo-webgateway
+    networks:
+      app_net:
+        ipv4_address: ${WEBGATEWAY_IP}
+    ports:
+      # change the local port already used on your system. 
+      - "80:80"
+      - "443:443"
+    environment:
+      # IRIS_HOST is setting up with the virtual ip in order to point always on the primary node
+      - IRIS_HOST=${IRIS_HOST}
+      - IRIS_PORT=${IRIS_PORT}
+      # Replace by the list of ip address allowed to open the CSP system manager
+      # https://localhost/csp/bin/RunTime/Module.cxw
+      - "SYSTEM_MANAGER=*.*.*.*"
+      # the list of web apps
+      # /csp allow to the webgateway to redirect all request starting by /csp to the iris instance
+      # You can specify a list separate by a space : "IRIS_WEBAPPS=/csp /api /isc /swagger-ui"
+      - "IRIS_WEBAPPS=/csp"
+    volumes:
+      # Mount certificates files.
+      - ./certificates/webgateway_client.cer:/opt/webgateway/bin/webgateway_client.cer
+      - ./certificates/webgateway_client.key:/opt/webgateway/bin/webgateway_client.key
+      - ./certificates/CA_Server.cer:/opt/webgateway/bin/CA_Server.cer
+      - ~/webgateway-apache-certificates/apache_webgateway.cer:/etc/apache2/certificate/apache_webgateway.cer
+      - ~/webgateway-apache-certificates/apache_webgateway.key:/etc/apache2/certificate/apache_webgateway.key
+    hostname: webgateway
+    command: ["--ssl"]
+  
+networks:
+  app_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "${APP_NET_SUBNET}"
+  mirror_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: "${MIRROR_NET_SUBNET}"
