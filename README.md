@@ -1,7 +1,7 @@
 # global-archiver-sample
 
 This is a sample to to test [global-archiver](https://github.com/lscalese/global-archiver) tool using an architecture with mirroring and ECP.  
-
+The goal is to move a part of global from a database in a mirror to a remote archive database.  
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ Copy the `iris.key` to this repository directory.
 
 This sample use a local directory as a volume to share database file `IRIS.DAT` between containers.  
 We need to set security settings to `./backup` directory.  
-If irisowner, irisuser groups and users does not exists yet on your system, create them.  
+If irisowner group and user does not exists yet on your system, create them.  
 
 ```bash
 sudo useradd --uid 51773 --user-group irisowner
@@ -56,16 +56,17 @@ cd ..
 ### Build and run containers
 
 ```
+#use sudo to avoid permission issue
 sudo docker-compose build --no-cache
 docker-compose up
 ```
 
-Wait a bit, there are post start executed on each node.
+Wait a bit, there are post start executed on each node.  
 
-Good !
+Good!  
 Now we have 4 containers started following this schema:  
 
-todo!
+![schema](./img/schema-01.JPG)
 
 ### Test
 
@@ -99,7 +100,7 @@ Set sc = ##class(lscalese.globalarchiver.Cleaner).DeleteArchivedData(Global,"ARC
 
 Open the management portal on the current primary node and check global mapping for the namespace `USER` and
 compare with global mapping on the backup node.  
-The global mapping for the archived data is missing.  
+The global mapping for the archived data is missing on the backup node.  
 
 Now stop the current primary to force the backup node to become primary.
 
@@ -107,7 +108,7 @@ Now stop the current primary to force the backup node to become primary.
 docker stop mirror-demo-master
 ```
 
-Check the global mapping again and now it should be setup "OnBecomePrimary" event performed by ZMIRROR routine.  
+Check the global mapping again, and now it should be setup "OnBecomePrimary" event performed by ZMIRROR routine.  
 
 ### Check data access
 
