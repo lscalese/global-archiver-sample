@@ -27,6 +27,8 @@ ARG IRIS_MIRROR_ROLE=master
 
 ADD config-files .
 
+COPY ZMIRROR.mac /
+
 SHELL [ "/session.sh" ]
 
 # Install ZPM, config-api and pki-script
@@ -36,6 +38,10 @@ SHELL [ "/session.sh" ]
 RUN \
 Do $SYSTEM.OBJ.Load("/opt/demo/zpm.xml", "ck") \
 zpm "install config-api" \
-Set sc = ##class(Api.Config.Services.Loader).Load("/opt/demo/simple-config.json")
+Set sc = ##class(Api.Config.Services.Loader).Load("/opt/demo/simple-config.json") \
+Do ##class(SYS.Database).MountDatabase("/usr/irissys/mgr/irislib/",0) \
+Do $SYSTEM.OBJ.Load("/ZMIRROR.mac","ck")
 
 COPY init_mirror.sh /
+COPY init_ecp_server.sh /
+

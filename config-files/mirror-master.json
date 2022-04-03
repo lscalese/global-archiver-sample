@@ -3,8 +3,8 @@
         "%Service_Mirror" : {
             "Enabled" : true
         },
-        "%Service_WebGateway": {
-            "ClientSystems": "${WEBGATEWAY_IP};127.0.0.1;${MASTER_APP_NET_IP}"
+        "%Service_ECP" : {
+            "Enabled" : true
         }
     },
     "SYS.MirrorMaster" : {
@@ -40,9 +40,49 @@
             "PrivateKeyFile": "/certificates/master_server.key",
             "Type": "1",
             "VerifyPeer": 3
+        },
+        "%ECPClient": {
+            "CAFile": "/certificates/CA_Server.cer",
+            "CertificateFile": "/certificates/master_server.cer",
+            "Name": "%ECPClient",
+            "PrivateKeyFile": "/certificates/master_server.key",
+            "Type": "0"
+        }
+    },
+    "ECPServers" : {
+        "ARCHIVE" : {
+            "Name" : "ARCHIVE",
+            "Address" : "${ARCHIVE_MIRROR_NET_IP}",
+            "Port" : "1972",
+            "SSLConfig" : "1"
         }
     },
     "Security.System": {
         "SSLSuperServer":1
+    },
+    "Databases": {
+        "ARCHIVE" : {
+            "Directory" : "/usr/irissys/mgr/archive/",
+            "Name" : "ARCHIVE",
+            "Server" : "ARCHIVE"
+        }
+    },
+    "MapGlobals":{
+        "USER": [{
+            "Name" : "demo.*",
+            "Database" : "MYAPPDATA"
+        },{
+            "Name" : "lscalese.globalarchive",
+            "Database" : "MYAPPDATA"
+        },{
+            "Name" : "lscalese.globalarcCA13.DataLogD",
+            "Database" : "MYAPPDATA"
+        },{
+            "Name" : "lscalese.globalarcCA13.DataLogI",
+            "Database" : "MYAPPDATA"
+        },{
+            "Name" : "lscalese.globalarcCA13.DataLogC",
+            "Database" : "MYAPPDATA"
+        }]
     }
 }

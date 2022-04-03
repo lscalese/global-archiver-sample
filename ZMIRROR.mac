@@ -1,0 +1,19 @@
+ROUTINE ZMIRROR [ type = mac]
+ZMIRROR
+    Quit
+
+NotifyBecomePrimary()
+    New
+    Set ns = $namespace
+    Try {
+        New $namespace
+        Set $namespace = "USER"
+        Set sc = ##class(lscalese.globalarchiver.MirrorEvents).NotifyBecomePrimary()
+        Set:'sc ^zMirror.lastErr = $ZDT($h,3,1)_" "_$SYSTEM.Status.GetOneErrorText(sc)
+    } Catch (ex) {
+        Set ^zMirror.lastErr = $ZDT($h,3,1)_" "_$SYSTEM.Status.GetOneErrorText(ex.AsStatus())
+    }
+    Set $namespace = ns
+
+    Quit:$Quit 1
+    Quit

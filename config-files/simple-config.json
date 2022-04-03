@@ -12,10 +12,7 @@
             "Directory" : "${DBDATADIR}"
         }
     },
-    "MapGlobals":{
-        "USER": [{
-            "Name" : "demo.*",
-            "Database" : "${DBDATANAME}"
-        }]
+    "config" : {
+        "MaxServerConn" : 2
     }
 }

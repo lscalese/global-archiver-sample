@@ -1,0 +1,39 @@
+{
+    "Security.Services" : {
+        "%Service_ECP" : {
+            "Enabled" : true,
+            "ClientSystems":"${MASTER_MIRROR_NET_IP};${BACKUP_MIRROR_NET_IP}",
+            "AutheEnabled":"1024"
+        }
+    },
+    "Security.SSLConfigs": {
+        "%SuperServer": {
+            "CAFile": "/certificates/CA_Server.cer",
+            "CertificateFile": "/certificates/archive_server.cer",
+            "Name": "%SuperServer",
+            "PrivateKeyFile": "/certificates/archive_server.key",
+            "Type": "1",
+            "VerifyPeer": 3
+        },
+        "%ECPServer": {
+            "CAFile": "/certificates/CA_Server.cer",
+            "CertificateFile": "/certificates/archive_server.cer",
+            "Name": "%SuperServer",
+            "PrivateKeyFile": "/certificates/archive_server.key",
+            "Type": "1",
+            "VerifyPeer": 3
+        }
+    },
+    "Security.System": {
+        "SSLSuperServer":1,
+        "SSLECPServer":1
+    },
+    "SYS.Databases":{
+        "/usr/irissys/mgr/archive/" : {}
+    },
+    "Databases":{
+        "ARCHIVE" : {
+            "Directory" : "/usr/irissys/mgr/archive/"
+        }
+    }
+}

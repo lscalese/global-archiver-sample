@@ -17,7 +17,6 @@ services:
     extra_hosts:
       - "master:${MASTER_APP_NET_IP}"
       - "backup:${BACKUP_APP_NET_IP}"
-      - "report:${REPORT_APP_NET_IP}"
     cap_add:
       - NET_ADMIN
 
@@ -37,11 +36,13 @@ services:
       - MASTER_MIRROR_NET_IP=${MASTER_MIRROR_NET_IP}
       - ARBITER_IP=${ARBITER_IP}
       - IRIS_VIRTUAL_IP=${IRIS_VIRTUAL_IP}
+      - ARCHIVE_MIRROR_NET_IP=${ARCHIVE_MIRROR_NET_IP}
     ports:
       - 81:52773
     volumes: 
       - ./backup:/opt/backup
       - ./init_mirror.sh:/init_mirror.sh
+      - ./config-files/mirror-master.json:/opt/demo/mirror-master.json
       # Mount certificates
       - ./certificates/master_server.cer:/certificates/master_server.cer
       - ./certificates/master_server.key:/certificates/master_server.key
@@ -50,7 +51,7 @@ services:
     hostname: master
     extra_hosts:
       - "backup:${BACKUP_APP_NET_IP}"
-      - "report:${REPORT_APP_NET_IP}"
+      - "archive:${ARCHIVE_APP_NET_IP}"
     cap_add:
       - NET_ADMIN
     command: ["-a", "/init_mirror.sh"]
@@ -71,9 +72,11 @@ services:
       - BACKUP_MIRROR_NET_IP=${BACKUP_MIRROR_NET_IP}
       - MASTER_APP_NET_IP=${MASTER_APP_NET_IP}
       - BACKUP_APP_NET_IP=${BACKUP_APP_NET_IP}
+      - ARCHIVE_MIRROR_NET_IP=${ARCHIVE_MIRROR_NET_IP}
     volumes: 
       - ./backup:/opt/backup
       - ./init_mirror.sh:/init_mirror.sh
+      - ./config-files/mirror-backup.json:/opt/demo/mirror-backup.json
       # Mount certificates
       - ./certificates/backup_server.cer:/certificates/backup_server.cer
       - ./certificates/backup_server.key:/certificates/backup_server.key
@@ -82,74 +85,39 @@ services:
     hostname: backup
     extra_hosts:
       - "master:${MASTER_APP_NET_IP}"
-      - "report:${REPORT_APP_NET_IP}"
+      - "archive:${ARCHIVE_APP_NET_IP}"
     cap_add:
       - NET_ADMIN
     command: ["-a", "/init_mirror.sh"]
 
-  report:
+  archive:
     image: mirror-demo
-    container_name: mirror-demo-report
+    container_name: data-ecp-archive
     networks:
       app_net:
-        ipv4_address: ${REPORT_APP_NET_IP}
+        ipv4_address: ${ARCHIVE_APP_NET_IP}
       mirror_net:
-        ipv4_address: ${REPORT_MIRROR_NET_IP}
+        ipv4_address: ${ARCHIVE_MIRROR_NET_IP}
     ports:
       - 83:52773
     environment: 
-      - IRIS_MIRROR_ROLE=report
-      - WEBGATEWAY_IP=${WEBGATEWAY_IP}
-      - MASTER_APP_NET_IP=${MASTER_APP_NET_IP}
-      - REPORT_MIRROR_NET_IP=${REPORT_MIRROR_NET_IP}
-      - REPORT_APP_NET_IP=${REPORT_APP_NET_IP}
+      - ARCHIVE_MIRROR_NET_IP=${ARCHIVE_MIRROR_NET_IP}
+      - MASTER_MIRROR_NET_IP=${MASTER_MIRROR_NET_IP}
+      - BACKUP_MIRROR_NET_IP=${BACKUP_MIRROR_NET_IP}
     volumes: 
-      - ./backup:/opt/backup
-      - ./init_mirror.sh:/init_mirror.sh
       # Mount certificates
-      - ./certificates/report_server.cer:/certificates/report_server.cer
-      - ./certificates/report_server.key:/certificates/report_server.key
+      - ./certificates/archive_server.cer:/certificates/archive_server.cer
+      - ./certificates/archive_server.key:/certificates/archive_server.key
       - ./certificates/CA_Server.cer:/certificates/CA_Server.cer
       #- ~/iris.key:/usr/irissys/mgr/iris.key
-    hostname: report
-    extra_hosts:
-      - "master:${MASTER_APP_NET_IP}"
-      - "backup:${BACKUP_APP_NET_IP}"
+      - ./config-files/data-ecp-archive.json:/opt/demo/data-ecp-archive.json
+      #
+      - ./init_ecp_server.sh:/init_ecp_server.sh
+    hostname: archive
     cap_add:
       - NET_ADMIN
-    command: ["-a", "/init_mirror.sh"]
-  
-  webgateway:
-    image: tls-ssl-webgateway
-    container_name: mirror-demo-webgateway
-    networks:
-      app_net:
-        ipv4_address: ${WEBGATEWAY_IP}
-    ports:
-      # change the local port already used on your system. 
-      - "80:80"
-      - "443:443"
-    environment:
-      # IRIS_HOST is setting up with the virtual ip in order to point always on the primary node
-      - IRIS_HOST=${IRIS_HOST}
-      - IRIS_PORT=${IRIS_PORT}
-      # Replace by the list of ip address allowed to open the CSP system manager
-      # https://localhost/csp/bin/RunTime/Module.cxw
-      - "SYSTEM_MANAGER=*.*.*.*"
-      # the list of web apps
-      # /csp allow to the webgateway to redirect all request starting by /csp to the iris instance
-      # You can specify a list separate by a space : "IRIS_WEBAPPS=/csp /api /isc /swagger-ui"
-      - "IRIS_WEBAPPS=/csp"
-    volumes:
-      # Mount certificates files.
-      - ./certificates/webgateway_client.cer:/opt/webgateway/bin/webgateway_client.cer
-      - ./certificates/webgateway_client.key:/opt/webgateway/bin/webgateway_client.key
-      - ./certificates/CA_Server.cer:/opt/webgateway/bin/CA_Server.cer
-      - ~/webgateway-apache-certificates/apache_webgateway.cer:/etc/apache2/certificate/apache_webgateway.cer
-      - ~/webgateway-apache-certificates/apache_webgateway.key:/etc/apache2/certificate/apache_webgateway.key
-    hostname: webgateway
-    command: ["--ssl"]
-  
+    command: ["-a", "/init_ecp_server.sh"]
+
 networks:
   app_net:
     ipam:
