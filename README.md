@@ -46,18 +46,14 @@ Mirroring and ECP communications are secured by tls\ssl, we need to generate cer
 Simply use the provided script:   
 
 ```
-docker pull intersystemsdc/iris-community:latest
-cd ./generator
-# sudo is needed due chown, chgrp, chmod ...
 sudo ./gen-certificates.sh
-cd ..
 ```
 
 ### Build and run containers
 
 ```
 #use sudo to avoid permission issue
-sudo docker-compose build --no-cache
+docker-compose build --no-cache
 docker-compose up
 ```
 
